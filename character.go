@@ -5,5 +5,5 @@ type Character struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Location    string   `json:"location"`
-	Loot        []string `json:"loot"`
+	Loot        []string `json:"loot,omitempty"`
 }
