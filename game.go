@@ -51,8 +51,6 @@ func (g *Game) NewGame(d mode) {
 	switch d {
 	case Display.Console:
 		g.Parse()
-	case Display.TUI:
-		g.ParseTerm()
 	case Display.GUI:
 		fmt.Println("Display Mode TBI")
 	}
