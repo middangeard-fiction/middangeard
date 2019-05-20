@@ -20,6 +20,7 @@ type Game struct {
 	Verbs    map[string]func(...string) `json:"-"`
 	Synonyms map[string][]string        `json:"synonyms"`
 	Player   Player
+	Items    map[*Item]*Item
 	Rooms    map[string]*Room `json:"-"`
 	Sounds   map[*operatmos.Audio]*operatmos.Audio
 }
@@ -73,4 +74,26 @@ func _wordWrap(text string, lineWidth int) string {
 		}
 	}
 	return wrapped
+}
+
+// Look up objects in current room AND the player inventory.
+// TODO: Support for items serving as containers for other items.
+func (g *Game) _findObject(args []string) *Item {
+	if r := g.Rooms[g.Player.Location]; r != nil {
+		if obj := r.Items._findObject(args); obj != nil {
+			return obj
+		}
+	}
+	if obj := g.Player.Inventory._findObject(args); obj != nil {
+		return obj
+	}
+	return nil
+}
+
+// Returns new room.
+func (g *Game) _lookAhead() *Room {
+	if r := g.Rooms[g.Player.Location]; r != nil {
+		return r
+	}
+	return &Room{Description: `You're standing in a void of nothingness. Obviously, the author of this adventure has yet to implement this room.`}
 }

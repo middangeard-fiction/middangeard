@@ -1,12 +1,17 @@
 package middangeard
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
+	"text/template"
 
 	"github.com/InVisionApp/conjungo"
 )
+
+// ItemVerbs represents Item Verb functions.
+type ItemVerbs map[string]func(item *Item, room *Room)
 
 /* Merge built-in verbs/synonyms with game author defined ones.
    In later iterations of Middangeard, there may be a way to provide an exclusion bit per verb,
@@ -15,15 +20,20 @@ import (
 func (g *Game) syncVerbs() {
 	builtin := Game{
 		Verbs: map[string]func(...string){
-			"help":  g.help,
-			"look":  g.look,
-			"quit":  g.quit,
-			"score": g.showScore,
-			"go":    g.walk,
+			"help":      g.help,
+			"drop":      g.drop,
+			"take":      g.take,
+			"inventory": g.Player.listInventory,
+			"inspect":   g.inspect,
+			"look":      g.look,
+			"quit":      g.quit,
+			"score":     g.showScore,
+			"go":        g.walk,
 		},
 		Synonyms: map[string][]string{
-			"quit": {"exit"},
-			"go":   {"walk", "travel"},
+			"inventory": {"i"},
+			"quit":      {"exit"},
+			"go":        {"walk", "travel"},
 		},
 	}
 
@@ -70,9 +80,97 @@ func (g *Game) quit(object ...string) {
 	}
 }
 
+func (g *Game) drop(args ...string) {
+	if len(args) != 0 {
+		obj := g.Player.Inventory._findObject(args)
+		if obj != nil && len(args) != 0 {
+			if r := g.Rooms[g.Player.Location]; r != nil {
+				obj.Fixture = true
+				r.Items.Add(obj)
+				if cb := obj.Verbs["drop"]; cb != nil {
+					cb(obj, r)
+				}
+			}
+			g.Player.Inventory.Remove(obj)
+		} else {
+			fmt.Printf("You aren't carrying any %v.", args[0])
+			fmt.Println()
+		}
+	} else {
+		fmt.Printf("Drop what?")
+		fmt.Println()
+	}
+}
+
+func (g *Game) take(args ...string) {
+	if len(args) != 0 {
+		obj := g.Rooms[g.Player.Location]._findObject(args)
+		if obj != nil && len(args) != 0 {
+			if obj.Carryable {
+				if r := g.Rooms[g.Player.Location]; r != nil {
+					r.Items.Remove(obj)
+					if cb := obj.Verbs["take"]; cb != nil {
+						cb(obj, r)
+					}
+				}
+				g.Player.PickupItem(obj)
+			} else {
+				fmt.Printf("You can't take %v", obj.Name)
+			}
+		} else {
+			fmt.Printf("You can't see any %v.", args[0])
+			fmt.Println()
+		}
+	} else {
+		fmt.Printf("Take what?")
+		fmt.Println()
+	}
+}
+
+func (g *Game) inspect(args ...string) {
+	if len(args) != 0 {
+		obj := g._findObject(args)
+		if obj != nil && len(args) != 0 {
+			if r := g.Rooms[g.Player.Location]; r != nil {
+				if cb := obj.Verbs["inspect"]; cb != nil {
+					cb(obj, r)
+				}
+				if len(obj.Description) != 0 {
+					fmt.Println(_wordWrap(obj.Description, 60))
+				}
+			}
+		} else {
+			fmt.Printf("You can't see any %v.", args[0])
+			fmt.Println()
+		}
+	} else {
+		fmt.Printf("Look at what?")
+		fmt.Println()
+	}
+}
+
 func (g *Game) look(...string) {
 	r := g._lookAhead()
 	fmt.Println(_wordWrap(r.Description, 60))
+
+	var text string
+	var tpl bytes.Buffer
+
+	var fns = template.FuncMap{
+		"plus1": func(x int) int {
+			return x + 1
+		},
+	}
+
+	t := template.Must(template.New("").Funcs(fns).Parse(itemRoomListTemplate))
+	t.Execute(&tpl, r.Items)
+
+	text = tpl.String()
+	if len(text) != 0 {
+		fmt.Println()
+		fmt.Printf("You see %v.", text)
+		fmt.Println()
+	}
 }
 
 func (g *Game) walk(direction ...string) {
@@ -278,12 +376,4 @@ func (g *Game) walk(direction ...string) {
 
 // Invoke sends an action (that would normally be performed by the player) to the parser.
 func (g *Game) Invoke(action string) {
-}
-
-// Returns new room.
-func (g *Game) _lookAhead() *Room {
-	if r := g.Rooms[g.Player.Location]; r != nil {
-		return r
-	}
-	return &Room{Description: `You're standing in a void of nothingness. Obviously, the author of this adventure has yet to implement this room.`}
 }
