@@ -1,14 +1,18 @@
 package middangeard
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/middangeard-fiction/middangeard/operatmos"
 )
 
 // Game represents the game's ruleset.
+// Replace Outro/GameOver strings with Win/Lose methods.
 type Game struct {
+	parser   parser
 	Title    string                     `json:"title"`
 	Author   string                     `json:"author"`
 	Intro    string                     `json:"intro"`
@@ -25,35 +29,59 @@ type Game struct {
 	Sounds   map[*operatmos.Audio]*operatmos.Audio
 }
 
+var displayMode mode
+
 // NewGame initializes a new game, prints the intro and launches
 // the text parser.
 func (g *Game) NewGame(d mode) {
+	displayMode = d
+	g.initSocket()
+
+	for clients[socket] == false {
+		// fmt.Println("Wait for connection")
+	}
+
+	g.parser.console = bufio.NewReadWriter(
+		bufio.NewReader(os.Stdin),
+		bufio.NewWriter(os.Stdout))
+
 	if Rankings == nil {
 		Rankings = []Ranking{
-			{0, "Beginner"},
-			{g.MaxScore / 2, "Amateur Adventurer"},
-			{g.MaxScore, "Master Adventurer"},
+			{Score: 0, Rank: "Beginner"},
+			{Score: g.MaxScore / 2, Rank: "Amateur Adventurer"},
+			{Score: g.MaxScore, Rank: "Master Adventurer"},
 		}
 	}
 
 	g.syncVerbs()
 
-	fmt.Printf("%v by %v \n \n", g.Title, g.Author)
+	// fmt.Printf("%v by %v \n \n", g.Title, g.Author)
+	g.Output(g.Title + " by " + g.Author)
 	fmt.Println(_wordWrap(g.Intro, 60))
 
-	for id, room := range g.Rooms {
-		switch id {
-		case g.Player.Location:
-			fmt.Println()
-			fmt.Println(_wordWrap(room.Description, 60))
-		}
+	// No need to range over the map. Player/Room connection can be accessed directly.
+	// for id := range g.Rooms {
+	// 	switch id {
+	// 	case g.Player.Location:
+	// 		fmt.Println()
+	// 		g.look()
+	// 	}
+	// }
+
+	if r := g.Rooms[g.Player.Location]; r != nil {
+		fmt.Println()
+		g.look()
 	}
 
 	switch d {
 	case Display.Console:
+		// g.initSocket()
+
+		// move to parser struct and/or make private.
 		g.Parse()
 	case Display.GUI:
-		fmt.Println("Display Mode TBI")
+		// g.initSocket()
+		g.Parse()
 	}
 }
 

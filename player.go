@@ -35,6 +35,9 @@ func (p *Player) listInventory(...string) {
 	var text string
 	var tpl bytes.Buffer
 
+	// Temporary hack, since Output is a method of Game.
+	var g *Game
+
 	var fns = template.FuncMap{
 		"plus1": func(x int) int {
 			return x + 1
@@ -47,7 +50,10 @@ func (p *Player) listInventory(...string) {
 
 	if len(text) != 0 {
 		fmt.Println()
-		fmt.Printf("You are carrying %v.", text)
+		// fmt.Printf("You are carrying %v.", text)
+		g.Output("You are carrying %v.", text)
 		fmt.Println()
+	} else {
+		g.Output("You aren't carrying anything.")
 	}
 }

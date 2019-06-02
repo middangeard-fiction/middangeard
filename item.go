@@ -48,12 +48,10 @@ func (i *Items) Remove(item *Item) {
 
 func (i *Item) _lookUp(args []string) bool {
 	if args[0] == i.Name {
-		fmt.Println(true)
 		return true
 	}
 	for _, alias := range i.Synonyms {
 		if args[0] == alias {
-			fmt.Println(true)
 			return true
 		}
 	}

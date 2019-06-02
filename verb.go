@@ -2,7 +2,6 @@ package middangeard
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"text/template"
@@ -46,35 +45,36 @@ func (g *Game) syncVerbs() {
 	if err2 != nil {
 		fmt.Println(err2)
 	}
-	fmt.Println(g.Verbs)
+	// fmt.Println(g.Verbs)
 
-	b, err := json.Marshal(g.Synonyms)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(string(b))
+	// b, err := json.Marshal(g.Synonyms)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+	// fmt.Println(string(b))
 }
 
 func (g *Game) help(...string) {
 	if len(g.Help) != 0 {
-		fmt.Println(g.Help)
+		g.Output(g.Help)
 	} else {
-		fmt.Println("In order to progress, type commands")
+		g.Output("In order to progress, type commands.")
 	}
 }
 
 func (g *Game) showScore(...string) {
-	fmt.Printf("Current Score: %v out of %v\n", g.Player.Score, g.MaxScore)
+	g.Output("Current Score: %v out of %v\n", g.Player.Score, g.MaxScore)
 }
 
 func (g *Game) quit(object ...string) {
 	// Check whether player actually wants to quit the game or quit drinking ;)
 	if len(object) == 0 {
 		if len(g.Goodbye) != 0 {
-			fmt.Println(g.Goodbye)
+			g.Output(g.Goodbye)
 		} else {
-			fmt.Println("Goodbye!")
+			// fmt.Println("Goodbye!")
+			g.Output("Goodbye!")
 		}
 		os.Exit(0)
 	}
@@ -92,12 +92,16 @@ func (g *Game) drop(args ...string) {
 				}
 			}
 			g.Player.Inventory.Remove(obj)
+			// Needs some sort of override, in case we don't actually allow to drop the item
+			// See Cloak of Darkness cloak, for starters.
+			// g.Output("You drop %v %v.", obj.Article, obj.Name)
 		} else {
-			fmt.Printf("You aren't carrying any %v.", args[0])
+			g.Output("You aren't carrying any %v.", args[0])
 			fmt.Println()
 		}
 	} else {
-		fmt.Printf("Drop what?")
+		// fmt.Printf("Drop what?")
+		g.Output("Drop what?")
 		fmt.Println()
 	}
 }
@@ -115,14 +119,14 @@ func (g *Game) take(args ...string) {
 				}
 				g.Player.PickupItem(obj)
 			} else {
-				fmt.Printf("You can't take %v", obj.Name)
+				g.Output("You can't take %v.", obj.Name)
 			}
 		} else {
-			fmt.Printf("You can't see any %v.", args[0])
+			g.Output("You can't see any %v.", args[0])
 			fmt.Println()
 		}
 	} else {
-		fmt.Printf("Take what?")
+		g.Output("Take what?")
 		fmt.Println()
 	}
 }
@@ -136,22 +140,24 @@ func (g *Game) inspect(args ...string) {
 					cb(obj, r)
 				}
 				if len(obj.Description) != 0 {
-					fmt.Println(_wordWrap(obj.Description, 60))
+					// fmt.Println(_wordWrap(obj.Description, 60))
+					g.Output(obj.Description)
 				}
 			}
 		} else {
-			fmt.Printf("You can't see any %v.", args[0])
+			g.Output("You can't see any %v.", args[0])
 			fmt.Println()
 		}
 	} else {
-		fmt.Printf("Look at what?")
+		g.Output("Look at what?")
 		fmt.Println()
 	}
 }
 
 func (g *Game) look(...string) {
 	r := g._lookAhead()
-	fmt.Println(_wordWrap(r.Description, 60))
+	// fmt.Println(_wordWrap(r.Description, 60))
+	g.Output(r.Description)
 
 	var text string
 	var tpl bytes.Buffer
@@ -168,7 +174,7 @@ func (g *Game) look(...string) {
 	text = tpl.String()
 	if len(text) != 0 {
 		fmt.Println()
-		fmt.Printf("You see %v.", text)
+		g.Output("You see %v.", text)
 		fmt.Println()
 	}
 }
@@ -190,7 +196,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.North] == nil && r.Directions.North != "" {
-				fmt.Println(_wordWrap(r.Directions.North, 60))
+				g.Output(r.Directions.North)
 			}
 		case "northeast":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Northeast] != nil {
@@ -206,7 +212,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Northeast] == nil && r.Directions.Northeast != "" {
-				fmt.Println(_wordWrap(r.Directions.Northeast, 60))
+				g.Output(r.Directions.Northeast)
 			}
 		case "northwest":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Northwest] != nil {
@@ -222,7 +228,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Northwest] == nil && r.Directions.Northwest != "" {
-				fmt.Println(_wordWrap(r.Directions.Northwest, 60))
+				g.Output(r.Directions.Northwest)
 			}
 		case "south":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.South] != nil {
@@ -238,7 +244,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.South] == nil && r.Directions.South != "" {
-				fmt.Println(_wordWrap(r.Directions.South, 60))
+				g.Output(r.Directions.South)
 			}
 		case "southeast":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Southeast] != nil {
@@ -254,7 +260,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Southeast] == nil && r.Directions.Southeast != "" {
-				fmt.Println(_wordWrap(r.Directions.Southeast, 60))
+				g.Output(r.Directions.Southeast)
 			}
 		case "southwest":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Southwest] != nil {
@@ -270,7 +276,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Southwest] == nil && r.Directions.Southwest != "" {
-				fmt.Println(_wordWrap(r.Directions.Southwest, 60))
+				g.Output(r.Directions.Southwest)
 			}
 		case "east":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.East] != nil {
@@ -286,7 +292,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.East] == nil && r.Directions.East != "" {
-				fmt.Println(_wordWrap(r.Directions.East, 60))
+				g.Output(r.Directions.East)
 			}
 		case "west":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.West] != nil {
@@ -302,7 +308,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.West] == nil && r.Directions.West != "" {
-				fmt.Println(_wordWrap(r.Directions.West, 60))
+				g.Output(r.Directions.West)
 			}
 		case "up":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Up] != nil {
@@ -318,7 +324,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Up] == nil && r.Directions.Up != "" {
-				fmt.Println(_wordWrap(r.Directions.Up, 60))
+				g.Output(r.Directions.Up)
 			}
 		case "down":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Down] != nil {
@@ -334,7 +340,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Down] == nil && r.Directions.Down != "" {
-				fmt.Println(_wordWrap(r.Directions.Down, 60))
+				g.Output(r.Directions.Down)
 			}
 		case "in":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.In] != nil {
@@ -350,7 +356,7 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.In] == nil && r.Directions.In != "" {
-				fmt.Println(_wordWrap(r.Directions.In, 60))
+				g.Output(r.Directions.In)
 			}
 		case "out":
 			if r := g.Rooms[g.Player.Location]; g.Rooms[r.Directions.Out] != nil {
@@ -366,14 +372,16 @@ func (g *Game) walk(direction ...string) {
 				}
 				g.look()
 			} else if g.Rooms[r.Directions.Out] == nil && r.Directions.Out != "" {
-				fmt.Println(_wordWrap(r.Directions.Out, 60))
+				g.Output(r.Directions.Out)
 			}
 		}
 	} else {
-		fmt.Println("Walk where?")
+		g.Output("Walk where?")
 	}
 }
 
 // Invoke sends an action (that would normally be performed by the player) to the parser.
 func (g *Game) Invoke(action string) {
+	g.parser.reader = action
+	g.Parse()
 }

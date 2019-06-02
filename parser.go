@@ -3,21 +3,31 @@ package middangeard
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"strings"
 )
+
+type parser struct {
+	console *bufio.ReadWriter
+	reader  string
+}
+
+// var r = strings.NewReader("Hello, Reader!")
+// var console *bufio.ReadWriter
+// var reader string
 
 // Parse implements a simple, extensible string parser.
 func (g *Game) Parse() {
 	// reader should be wrapped inside an _input() function.
-	reader := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print(">>> ")
-		for reader.Scan() {
-			switch reader.Text() {
-			default:
-				// Split into tokens prior to synonymization
-				tokens := g._tokenize(reader.Text())
+		if len(g.parser.reader) == 0 {
+			g.parser.reader, _ = g.parser.console.ReadString('\n')
+		}
+		switch g.parser.reader {
+		default:
+			// Split into tokens prior to synonymization
+			tokens := g._tokenize(g.parser.reader)
+			if len(tokens) > 0 {
 				v := tokens[0]
 				s := g._synonymize(v)
 				if n, _ := g.Verbs[s]; g.Verbs[s] != nil {
@@ -31,8 +41,10 @@ func (g *Game) Parse() {
 					// all Println' should later be wrapped into an _output() function.
 					fmt.Println("I beg your pardon?")
 				}
+			} else {
+				fmt.Println("I beg your pardon?")
 			}
-			fmt.Print(">>> ")
+			g.parser.reader = ""
 		}
 	}
 }
@@ -40,6 +52,7 @@ func (g *Game) Parse() {
 func (g *Game) _tokenize(cmd string) []string {
 	if len(cmd) != 0 {
 		tokens := strings.Fields(cmd)
+		fmt.Println(tokens)
 		return tokens
 	}
 	return []string{" "}
